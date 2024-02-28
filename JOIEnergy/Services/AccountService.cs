@@ -1,15 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using JOIEnergy.Enums;
-using JOIEnergy.Interfaces;
+﻿namespace JOIEnergy.Services;
 
-namespace JOIEnergy.Services
+using Enums;
+using SupplierMap = Dictionary<string, Enums.Supplier>;
+
+public sealed class AccountService : IAccountService
 {
-    public class AccountService(Dictionary<string, Supplier> smartMeterToPricePlanAccounts) : Dictionary<string, Supplier>, IAccountService
-    {
-        public Supplier GetPricePlanIdForSmartMeterId(string smartMeterId)
-        {
-            return smartMeterToPricePlanAccounts.GetValueOrDefault(smartMeterId, Supplier.NullSupplier);
-        }
-    }
+  private readonly SupplierMap _smartMeterToPricePlanAccounts;
+
+  public AccountService(SupplierMap smartMeterToPricePlanAccounts)
+  {
+    _smartMeterToPricePlanAccounts = smartMeterToPricePlanAccounts;
+  }
+
+  public Supplier GetPricePlanIdForSmartMeterId(string smartMeterId)
+  {
+    return _smartMeterToPricePlanAccounts
+      .GetValueOrDefault(smartMeterId, Supplier.NullSupplier);
+  }
 }

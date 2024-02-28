@@ -1,38 +1,39 @@
+namespace JOIEnergy.Tests;
+
+using Enums;
+using Services;
 using System;
 using System.Collections.Generic;
-using JOIEnergy.Enums;
-using JOIEnergy.Services;
 using Xunit;
+using static Enums.Supplier;
 
-namespace JOIEnergy.Tests
+public class AccountServiceTest
 {
-    public class AccountServiceTest
-    {
-        private const Supplier PRICE_PLAN_ID = Supplier.PowerForEveryone;
-        private const String SMART_METER_ID = "smart-meter-id";
+  private const String SmartMeterId = "smart-meter-id";
+  private const Supplier PricePlanId = PowerForEveryone;
 
-        private AccountService accountService;
+  private readonly AccountService _accountService;
 
-        public AccountServiceTest()
-        {
-            Dictionary<String, Supplier> smartMeterToPricePlanAccounts = new Dictionary<string, Supplier>();
-            smartMeterToPricePlanAccounts.Add(SMART_METER_ID, PRICE_PLAN_ID);
+  public AccountServiceTest()
+  {
+    Dictionary<String, Supplier> smartMeterToPricePlanAccounts =
+      new() { { SmartMeterId, PricePlanId } };
 
-            accountService = new AccountService(smartMeterToPricePlanAccounts);
-        }
+    _accountService = new AccountService(smartMeterToPricePlanAccounts);
+  }
 
-        [Fact]
-        public void GivenTheSmartMeterIdReturnsThePricePlanId()
-        {
-            var result = accountService.GetPricePlanIdForSmartMeterId("smart-meter-id");
-            Assert.Equal(Supplier.PowerForEveryone, result);
-        }
+  [Theory]
+  [MemberData(nameof(Data))]
+  public void Test(KeyValuePair<string, Supplier> pair)
+  {
+    (string value, Supplier supplier) = (pair.Key, pair.Value);
 
-        [Fact]
-        public void GivenAnUnknownSmartMeterIdReturnsANullSupplier()
-        {
-            var result = accountService.GetPricePlanIdForSmartMeterId("bob-carolgees");
-            Assert.Equal(Supplier.NullSupplier, result);
-        }
-    }
+    Supplier result = _accountService.GetPricePlanIdForSmartMeterId(value);
+
+    Assert.Equal(supplier, result);
+  }
+
+  public static readonly TheoryData<KeyValuePair<string, Supplier>> Data = new(
+    new KeyValuePair<string, Supplier>("bob-carolgees", NullSupplier),
+    new KeyValuePair<string, Supplier>("smart-meter-id", PowerForEveryone));
 }

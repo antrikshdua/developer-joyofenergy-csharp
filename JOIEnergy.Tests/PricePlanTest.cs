@@ -1,49 +1,34 @@
-﻿using System;
+﻿namespace JOIEnergy.Tests;
+
+using Domain;
+using System;
 using System.Collections.Generic;
-using JOIEnergy.Domain;
-using JOIEnergy.Enums;
 using Xunit;
+using static Enums.Supplier;
 
-namespace JOIEnergy.Tests
+public class PricePlanTest
 {
-    public class PricePlanTest
+  private readonly PricePlan _pricePlan = new(TheGreenEco, 20m,
+    new List<PeakTimeMultiplier>
     {
-        private PricePlan _pricePlan;
+      new(DayOfWeek.Saturday, 2m), new(DayOfWeek.Sunday, 10m)
+    });
 
-        public PricePlanTest()
-        {
-            _pricePlan = new PricePlan
-            {
-                EnergySupplier = Supplier.TheGreenEco,
-                UnitRate = 20m,
-                PeakTimeMultiplier = new List<PeakTimeMultiplier> {
-                    new PeakTimeMultiplier { 
-                        DayOfWeek = DayOfWeek.Saturday,
-                        Multiplier = 2m
-                    },
-                    new PeakTimeMultiplier {
-                        DayOfWeek = DayOfWeek.Sunday,
-                        Multiplier = 10m
-                    }
-                }
-            };
-        }
+  [Fact]
+  public void TestGetEnergySupplier()
+  {
+    Assert.Equal(TheGreenEco, _pricePlan.EnergySupplier);
+  }
 
-        [Fact]
-        public void TestGetEnergySupplier() {
-            Assert.Equal(Supplier.TheGreenEco, _pricePlan.EnergySupplier);
-        }
+  [Fact]
+  public void TestGetBasePrice()
+  {
+    Assert.Equal(20m, _pricePlan.GetPrice(new DateTime(2018, 1, 2)));
+  }
 
-        [Fact]
-        public void TestGetBasePrice() {
-            Assert.Equal(20m, _pricePlan.GetPrice(new DateTime(2018, 1, 2)));
-        }
-
-        [Fact]
-        public void TestGetPeakTimePrice()
-        {
-            Assert.Equal(40m, _pricePlan.GetPrice(new DateTime(2018, 1, 6)));
-        }
-
-    }
+  [Fact]
+  public void TestGetPeakTimePrice()
+  {
+    Assert.Equal(40m, _pricePlan.GetPrice(new DateTime(2018, 1, 6)));
+  }
 }

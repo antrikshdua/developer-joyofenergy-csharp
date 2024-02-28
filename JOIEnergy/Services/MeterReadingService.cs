@@ -1,27 +1,39 @@
-﻿using System;
-using System.Collections.Generic;
-using JOIEnergy.Domain;
-using JOIEnergy.Interfaces;
+﻿namespace JOIEnergy.Services;
 
-namespace JOIEnergy.Services
+using Domain;
+
+public sealed class MeterReadingService : IMeterReadingService
 {
-    public class MeterReadingService(Dictionary<string, List<ElectricityReading>> meterAssociatedReadings)
-        : IMeterReadingService
+  private readonly Dictionary<string, List<ElectricityReading>>
+    _meterAssociatedReadings;
+
+  public MeterReadingService(
+    Dictionary<string, List<ElectricityReading>> meterAssociatedReadings)
+  {
+    _meterAssociatedReadings = meterAssociatedReadings;
+  }
+
+  public IReadOnlyList<ElectricityReading> GetReadings(string smartMeterId)
+  {
+    return _meterAssociatedReadings.TryGetValue(
+      smartMeterId,
+      out List<ElectricityReading> readings)
+      ? readings
+      : ArraySegment<ElectricityReading>.Empty;
+  }
+
+  public void StoreReadings(
+    string smartMeterId,
+    IReadOnlyList<ElectricityReading> electricityReadings)
+  {
+    if (_meterAssociatedReadings
+        .TryGetValue(smartMeterId, out List<ElectricityReading> reading))
     {
-        public Dictionary<string, List<ElectricityReading>> MeterAssociatedReadings { get; set; } = meterAssociatedReadings;
-
-        public List<ElectricityReading> GetReadings(string smartMeterId)
-        {
-            return MeterAssociatedReadings.TryGetValue(smartMeterId, out var reading) ? reading : [];
-        }
-
-        public void StoreReadings(string smartMeterId, List<ElectricityReading> electricityReadings) {
-            if (!MeterAssociatedReadings.TryGetValue(smartMeterId, out var value)) {
-                value = [];
-                MeterAssociatedReadings.Add(smartMeterId, value);
-            }
-
-            electricityReadings.ForEach(electricityReading => value.Add(electricityReading));
-        }
+      reading.AddRange(electricityReadings);
     }
+    else
+    {
+      _meterAssociatedReadings.Add(smartMeterId, [..electricityReadings]);
+    }
+  }
 }

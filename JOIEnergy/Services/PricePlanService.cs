@@ -1,47 +1,63 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using JOIEnergy.Domain;
-using JOIEnergy.Interfaces;
+﻿namespace JOIEnergy.Services;
 
-namespace JOIEnergy.Services
+using Domain;
+
+public class PricePlanService : IPricePlanService
 {
-    public class PricePlanService(List<PricePlan> pricePlan, IMeterReadingService meterReadingService)
-        : IPricePlanService
+  private readonly List<PricePlan> _pricePlans;
+  private readonly IMeterReadingService _meterReadingService;
+
+  public PricePlanService(
+    List<PricePlan> pricePlan,
+    IMeterReadingService meterReadingService)
+  {
+    _pricePlans = pricePlan;
+    _meterReadingService = meterReadingService;
+  }
+
+  private static decimal CalculateAverageReading(
+    IReadOnlyCollection<ElectricityReading> electricityReadings)
+  {
+    decimal newSummedReadings = electricityReadings
+      .Select(readings => readings.Reading)
+      .Aggregate((reading, accumulator) => reading + accumulator);
+
+    return newSummedReadings / electricityReadings.Count;
+  }
+
+  private static decimal CalculateTimeElapsed(
+    IReadOnlyCollection<ElectricityReading> electricityReadings)
+  {
+    DateTime first = electricityReadings.Min(reading => reading.Time);
+    DateTime last = electricityReadings.Max(reading => reading.Time);
+
+    return (decimal)(last - first).TotalHours;
+  }
+
+  private static decimal CalculateCost(
+    IReadOnlyCollection<ElectricityReading> electricityReadings,
+    PricePlan pricePlan)
+  {
+    decimal average = CalculateAverageReading(electricityReadings);
+    decimal timeElapsed = CalculateTimeElapsed(electricityReadings);
+    decimal averagedCost = average / timeElapsed;
+
+    return averagedCost * pricePlan.UnitRate;
+  }
+
+  public Dictionary<String, decimal>
+    GetConsumptionCostOfElectricityReadingsForEachPricePlan(String smartMeterId)
+  {
+    IReadOnlyList<ElectricityReading> electricityReadings =
+      _meterReadingService.GetReadings(smartMeterId);
+
+    if (!electricityReadings.Any())
     {
-        public interface Debug { void Log(string s); };
-
-        private decimal calculateAverageReading(List<ElectricityReading> electricityReadings)
-        {
-            var newSummedReadings = electricityReadings.Select(readings => readings.Reading).Aggregate((reading, accumulator) => reading + accumulator);
-
-            return newSummedReadings / electricityReadings.Count();
-        }
-
-        private decimal calculateTimeElapsed(List<ElectricityReading> electricityReadings)
-        {
-            var first = electricityReadings.Min(reading => reading.Time);
-            var last = electricityReadings.Max(reading => reading.Time);
-
-            return (decimal)(last - first).TotalHours;
-        }
-        private decimal calculateCost(List<ElectricityReading> electricityReadings, PricePlan pricePlan)
-        {
-            var average = calculateAverageReading(electricityReadings);
-            var timeElapsed = calculateTimeElapsed(electricityReadings);
-            var averagedCost = average/timeElapsed;
-            return averagedCost * pricePlan.UnitRate;
-        }
-
-        public Dictionary<String, decimal> GetConsumptionCostOfElectricityReadingsForEachPricePlan(String smartMeterId)
-        {
-            var electricityReadings = meterReadingService.GetReadings(smartMeterId);
-
-            if (!electricityReadings.Any())
-            {
-                return new Dictionary<string, decimal>();
-            }
-            return pricePlan.ToDictionary(plan => plan.EnergySupplier.ToString(), plan => calculateCost(electricityReadings, plan));
-        }
+      return new Dictionary<string, decimal>();
     }
+
+    return _pricePlans.ToDictionary(
+      plan => plan.EnergySupplier.ToString(),
+      plan => CalculateCost(electricityReadings, plan));
+  }
 }

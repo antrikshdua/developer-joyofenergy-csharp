@@ -1,9 +1,5 @@
-﻿using System;
-namespace JOIEnergy.Domain
-{
-    public class ElectricityReading
-    {
-        public DateTime Time { get; set; }
-        public decimal Reading { get; set; }
-    }
-}
+﻿namespace JOIEnergy.Domain;
+
+public sealed record ElectricityReading(
+  decimal Reading,
+  DateTime Time);
